@@ -61,11 +61,18 @@ function validateForm() {
     }
 
     // 유효성 검사 통과 여부 반환 : false이면 폼 제출X
-    return tagSelectionWarning.innerHTML === '' &&
-        activityTypeWarning.innerHTML === '' &&
-        goalTitleWarning.innerHTML === '' &&
-        goalDetailsWarning.innerHTML === '' &&
-        meetingPreferenceWarning.innerHTML === '';
+    if (tagSelectionWarning.innerHTML === '' &&
+    activityTypeWarning.innerHTML === '' &&
+    goalTitleWarning.innerHTML === '' &&
+    goalDetailsWarning.innerHTML === '' &&
+    meetingPreferenceWarning.innerHTML === '') {
+      const btn = document.getElementById('goal-creation-submit')
+      btn.disabled = true;
+      btn.value = "처리 중...";
+      return true;
+    } else {
+      return false;
+    }
 }
 
 const certRequired = document.getElementById("cert_required");
@@ -77,55 +84,87 @@ if (certRequired) {
 }
 
 function validateGroupForm() {
-    const goalSelect = document.getElementById('goal');
-    const titleInput = document.getElementById('title');
-    const detailTextarea = document.getElementById('detail');
-    const certRequiredCheckbox = document.getElementById('cert_required');
-    const penaltyInput = document.getElementById('penalty');
-    const certDetail = document.getElementById('cert_detail');
+  const goalSelect = document.getElementById('goal');
+  const titleInput = document.getElementById('title');
+  const detailTextarea = document.getElementById('detail');
+  const certRequiredCheckbox = document.getElementById('cert_required');
+  const penaltyInput = document.getElementById('penalty');
+  const depositInput = document.getElementById('deposit')
+  const certDetail = document.getElementById('cert_detail');
+  const durationRadios = document.getElementsByName('room-duration');
+  const userCoin = document.getElementById('user-coin').value;
 
-    const goalWarning = document.getElementById('goal-warning');
-    const titleWarning = document.getElementById('title-warning');
-    const detailWarning = document.getElementById('detail-warning');
-    const penaltyWarning = document.getElementById('penalty-warning');
-    const certDetailWarning = document.getElementById('cert-detail-warning');
+  const goalWarning = document.getElementById('goal-warning');
+  const titleWarning = document.getElementById('title-warning');
+  const detailWarning = document.getElementById('detail-warning');
+  const penaltyWarning = document.getElementById('penalty-warning');
+  const certDetailWarning = document.getElementById('cert-detail-warning');
+  const durationWarning = document.getElementById('duration-warning');
+  const depositWarning = document.getElementById('deposit-warning');
 
-    goalWarning.innerHTML = '';
-    titleWarning.innerHTML = '';
-    detailWarning.innerHTML = '';
-    penaltyWarning.innerHTML = '';
-    certDetailWarning.innerHTML = '';
+  goalWarning.innerHTML = '';
+  titleWarning.innerHTML = '';
+  detailWarning.innerHTML = '';
+  penaltyWarning.innerHTML = '';
+  certDetailWarning.innerHTML = '';
+  durationWarning.innerHTML = '';
+  depositWarning.innerHTML = '';
 
-    if (goalSelect.value === '') {
-        goalWarning.innerHTML = '목표를 선택하세요.';
-    }
+  if (goalSelect.value === '') {
+      goalWarning.innerHTML = '목표를 선택하세요.';
+  }
 
-    if (titleInput.value.trim() === '') {
-        titleWarning.innerHTML = '방의 제목을 입력하세요.';
-    }
+  if (titleInput.value.trim() === '') {
+      titleWarning.innerHTML = '방의 제목을 입력하세요.';
+  }
 
-    if (detailTextarea.value.trim() === '') {
-        detailWarning.innerHTML = '세부사항을 입력하세요.';
-    }
+  if (detailTextarea.value.trim() === '') {
+      detailWarning.innerHTML = '세부사항을 입력하세요.';
+  }
 
-    // 토글 버튼이 On인 경우에만 추가 validation 수행
-    if (certRequiredCheckbox.checked) {
+  let durationChecked = false;
+  for (const durationRadio of durationRadios) {
+      if (durationRadio.checked) {
+          durationChecked = true;
+          break;
+      }
+  }
+  if (!durationChecked) {
+      durationWarning.innerHTML = '활동기간을 선택하세요.';
+  }
 
-        if (certDetail.value.trim() === ''){
-            certDetailWarning.innerHTML = '인증 세부사항을 간단히 적어주세요!(인증주기, 인증시간 등)';
-        }
+  // 토글 버튼이 On인 경우에만 추가 validation 수행
+  if (certRequiredCheckbox.checked) {
+      if (certDetail.value.trim() === '') {
+          certDetailWarning.innerHTML = '인증 세부사항을 간단히 적어주세요!(인증주기, 인증시간 등)';
+      }
 
-        if (penaltyInput.value === '') {
-            penaltyWarning.innerHTML = '벌금을 입력하세요.';
-        }
-    }
+      if (penaltyInput.value === '') {
+          penaltyWarning.innerHTML = '벌금을 입력하세요.';
+      }
 
-    // 유효성 검사 통과 여부 반환 : false이면 폼 제출X
-    return goalWarning.innerHTML === '' &&
-        titleWarning.innerHTML === '' &&
-        detailWarning.innerHTML === '' &&
-        penaltyWarning.innerHTML === '' &&
-        certDetailWarning.innerHTML === '';
+      if (depositInput.value === '') {
+        depositWarning.innerHTML = '보증금을 입력하세요.';
+      }
+      if (depositInput.value > parseInt(userCoin)) {
+        depositWarning.innerHTML = `보유한 코인이 부족합니다.(현재 보유 : ${userCoin}🪙)`;
+      }
+  }
+  // 유효성 검사 통과 여부 반환 : false이면 폼 제출X
+  if (goalWarning.innerHTML === '' &&
+  titleWarning.innerHTML === '' &&
+  detailWarning.innerHTML === '' &&
+  penaltyWarning.innerHTML === '' &&
+  certDetailWarning.innerHTML === '' &&
+  durationWarning.innerHTML === '' &&
+  depositWarning.innerHTML === '') {
+    const btn = document.getElementById('group-create-submit');
+    btn.disabled = true;
+    btn.value = "처리 중...";
+    return true;
+  } else {
+    return false;
+  }
 }
 
 function getCookie(name) {
@@ -344,7 +383,7 @@ function PermissionCheck(user_id, room_id) {
       });
     } else if (response.ok) {
       window.location.href =
-        window.location.origin + "/group_admin/member_list/" + room_id;
+        window.location.origin + "/group_admin/main/" + room_id;
     }
   });
 }
@@ -364,6 +403,7 @@ function WithdrawalConfirm(user_id, room_id) {
   };
   Swal.fire({
     title: "정말로 탈퇴하겠습니까?",
+    text: "자의적으로 탈퇴할 시 보증금을 반환받을 수 없습니다!",
     icon: "question",
     showCancelButton: true,
     confirmButtonColor: "#3085d6",
@@ -427,7 +467,6 @@ function GroupClosureConfirm(room_id) {
   };
   Swal.fire({
     title: "방을 폐쇄하고 활동을 종료하시겠습니까?",
-    text: "이 선택은 되돌릴 수 없습니다. 신중하게 생각하시길 권장드립니다.",
     icon: "warning",
     showCancelButton: true,
     confirmButtonColor: "#3085d6",
@@ -458,7 +497,7 @@ function GroupClosureConfirm(room_id) {
         })
         .then((json_data) => {
           Swal.fire({
-            title: "폐쇄 완료",
+            title: "활동 종료",
             text: json_data.message,
             icon: "success",
           })
@@ -472,7 +511,7 @@ function GroupClosureConfirm(room_id) {
     } else if (result.dismiss === Swal.DismissReason.cancel) {
       Swal.fire({
         title: "취소됨",
-        text: "폐쇄 요청이 취소되었습니다.",
+        text: "요청이 취소되었습니다.",
         icon: "error",
         confirmButtonText: "확인",
       });
@@ -523,21 +562,21 @@ function SubmitAchievementReport(goal_id) {
   }
 }
 
-function displaySearchResults(results) {
+function displaySearchResults(display, results) {
   if (results.length === 0) {
-    searchResultsDiv.innerHTML = '<p>일치하는 사용자가 없습니다.</p>';
+    display.innerHTML = '<p>일치하는 사용자가 없습니다.</p>';
     return;
   }
   const userList = results.map(user => 
   ` <div>
       <span>${user.nickname}</span>
-      <button class="direct-invitation-button" onclick="suggestJoin({{room_id}}, ${user.id})">가입제안</button>
+      <button class="direct-invitation-button" onclick="suggestDirectJoin(${user.room_id}, ${user.id})">가입제안</button>
     </div>
   `).join('');
-  searchResultsDiv.innerHTML = userList;
+  display.innerHTML = userList;
 }
 
-function suggestJoin(room_id, userId) {
+function suggestDirectJoin(room_id, userId) {
     fetch(window.location.origin + '/group_admin/suggest_join/' + room_id, {
         method: 'POST',
         headers: {
@@ -569,6 +608,43 @@ function suggestJoin(room_id, userId) {
     });
 }
 
+function validateTime() {
+  var startInput = document.getElementById('id_start');
+  var startValue = new Date(startInput.value);
+
+  var endInput = document.getElementById('id_end');
+  var endValue = new Date(endInput.value);
+
+  var currentTime = new Date();
+  if (endValue <= currentTime) {
+    Swal.fire({
+      icon: 'error',
+      title: '종료 시간은 현재 시간보다 미래여야 합니다.',
+      });
+  } else if (startValue >= endValue) {
+    Swal.fire({
+      icon: 'error',
+      title: '시작 시간은 종료 시간보다 과거여야 합니다.',
+      });
+  } else {
+    document.getElementById('authentication-form').submit();
+  }
+}
+
+function checkCurTime(endTime) {
+  var end = new Date(endTime);
+  var now = new Date();
+  if (now > end) {
+    Swal.fire({
+      icon: 'error',
+      text: '이미 종료된 인증입니다.',
+      });
+      return false;
+  } else {
+      return true;
+  }
+}
+
 // 필요할 때 쓰려고 미리 만들어둠
 function saveTempInfoToSession(infoName, tempInfo) {
   sessionStorage.setItem(infoName, tempInfo);
@@ -580,31 +656,189 @@ function getTempInfoFromSession(infoName) {
   return tempInfo;
 }
 
-// 유저 직접 초대 관련
-const nicknameInput = document.getElementById('nickname');
-const searchResultsDiv = document.getElementById('searchResults');
-const roomId = document.getElementById('invitation-roomId-hidden').value;
+function checkGoalStatus() {
+  fetch(window.location.origin + '/group/check_goals')
+  .then(response => {
+      if (response.ok) {
+        window.location.href = window.location.origin + "/group/create_group";
+      } else {
+        Swal.fire({
+          icon: 'error',
+          title: '<div style="font-size: 20px">한 개 이상의 등록가능한 목표가 필요합니다.</div>',
+          });
+      }
+    })
+  .catch(error => {
+      console.error(error);
+  });
+}
 
-if (nicknameInput){
-  nicknameInput.addEventListener('input', () => {
-    const nickname = nicknameInput.value.trim();
-    if (nickname !== '') {
-      fetch(`/group_admin/search/${roomId}?nickname=${nickname}`)
-        .then(response => {
-          if (!response.ok) {
-            throw new Error('서버 오류 발생');
-          }
-          return response.json();
-        })
-        .then(data => {
-          displaySearchResults(data);
-        })
-        .catch(error => {
-          console.error('검색 중 오류 발생:', error);
+function suggestJoin(button, userNickname, userId, roomId, goalId) {
+  Swal.fire({
+      title: `<div><span style="color: #EF7373">${userNickname}</span>님에게 가입 제안을 보내시겠습니까?</div>`,
+      icon: 'question',
+      showCancelButton: true,
+      confirmButtonText: '확인',
+      cancelButtonText: '취소',
+  }).then((result) => {
+      if (result.isConfirmed) {
+          fetch(window.location.origin + '/group/suggest_join/' + roomId, {
+              method: 'POST',
+              body: JSON.stringify({ 'user_id':userId, 'goal_id':goalId }),
+              headers: {
+                  'Content-Type': 'application/json',
+                  'X-CSRFToken': getCookie('csrftoken'),
+              }
+          }).then(response => {
+              if (!response.ok) {
+                  Swal.fire({
+                      title: '오류 발생',
+                      text: '가입 제안을 보내는 도중 오류가 발생했습니다.',
+                      icon: 'error',
+                      confirmButtonText: '확인'
+                  });
+              } else {
+                  button.disabled = true;
+                  button.classList.add('applied');
+              }
+          }).catch(error => {
+              Swal.fire({
+                  title: '오류 발생',
+                  text: '가입 제안을 보내는 도중 오류가 발생했습니다.',
+                  icon: 'error',
+                  confirmButtonText: '확인'
+              });
+          });
+      }
+  });
+}
+
+function applyForAdmission(button, roomName, userId, roomId, goalId) {
+  Swal.fire({
+    title: `<div><span style="color: #EF7373">${roomName}</span>방에 가입을 신청하시겠습니까?</div>`,
+    icon: 'question',
+    showCancelButton: true,
+    confirmButtonText: '확인',
+    cancelButtonText: '취소',
+    }).then((result) => {
+    if (result.isConfirmed) {
+        fetch(window.location.origin + '/goal/suggest_join/' + goalId, {
+            method: 'POST',
+            body: JSON.stringify({'user_id':userId,'room_id':roomId}),
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            }
+        }).then(response => {
+            if (!response.ok) {
+                Swal.fire({
+                    title: '오류 발생',
+                    text: '가입 신청을 보내는 도중 오류가 발생했습니다.',
+                    icon: 'error',
+                    confirmButtonText: '확인'
+                });
+            } else {
+                button.disabled = true;
+                button.classList.add('applied');
+            }
+        }).catch(error => {
+            Swal.fire({
+                title: '오류 발생',
+                text: '가입 신청을 보내는 도중 오류가 발생했습니다.',
+                icon: 'error',
+                confirmButtonText: '확인'
+            });
         });
-    } else {
-      searchResultsDiv.innerHTML = '';
+      }
+    });
+}
+
+function acceptRequest(alarmId) {
+  fetch(window.location.origin + "/alarm/accept_request/" + alarmId + '/', {
+      method: 'POST',
+      headers: {
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+  })
+  .then(response => {
+      if (response.ok) {
+        window.location.href = window.location.origin + '/alarm/show_alarms';
+      } else {
+          if (response.status === 400) {
+              Swal.fire({
+                  title: '이미 방에 가입되거나 완료된 목표입니다.',
+                  icon: 'error'
+              });
+          } else if (response.status === 403) {
+              Swal.fire({
+                title: '현재 보유한 코인이 방의 보증금보다 적어서 가입할 수 없습니다.',
+                icon: 'error'
+              });
+          } else if (response.status === 409) {
+              Swal.fire({
+                  title: '이미 해당 방에 가입된 유저입니다.',
+                  icon: 'error'
+              });
+          } else {
+              Swal.fire({
+                  title: '에러',
+                  text: '수락 처리 중 알 수 없는 에러가 발생했습니다.',
+                  icon: 'error'
+              });
+          }
+      }
+  })
+  .catch(error => {
+      console.error(error);
+  });
+}
+
+function acceptDirectRequest(alarmId) {
+  const selectedGoal = document.getElementById('goal').value;
+  fetch(window.location.origin + "/alarm/accept_direct_request/" + alarmId + '/', {
+      method: 'POST',
+      body: JSON.stringify({'goal_id':selectedGoal}),
+      headers: {
+        'Content-Type': 'application/json',
+        'X-CSRFToken': getCookie('csrftoken'),
+      },
+  })
+  .then(response => {
+      if (response.ok) {
+        window.location.href = window.location.origin + '/alarm/show_alarms';
+      } else {
+          if (response.status === 400) {
+              Swal.fire({
+                  title: '이미 해당 방에 가입된 상태입니다.',
+                  icon: 'error'
+              });
+          } else if (response.status === 403) {
+            Swal.fire({
+              title: '현재 보유한 코인이 방의 보증금보다 적어서 가입할 수 없습니다.',
+              icon: 'error'
+            });
+          } else {
+              Swal.fire({
+                  title: '에러',
+                  text: '수락 처리 중 알 수 없는 에러가 발생했습니다.',
+                  icon: 'error'
+              });
+          }
+      }
+  })
+  .catch(error => {
+      console.error(error);
+  });
+}
+
+function checkRoomActive(roomId) {
+  fetch(window.location.origin + "/group/check_status/" + roomId)
+  .then(response => {
+    if (response.ok) {
+      window.location.href = window.location.origin + "/group_activity/main/" + roomId
+    }
+    else {
+      NotActiveYetModal()
     }
   });
 }
-    

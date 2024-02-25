@@ -30,7 +30,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     region = models.CharField(max_length=30, null=True, blank=True)
     region_detail = models.CharField(max_length=30, null=True, blank=True)
     username = models.CharField(max_length=30, unique=False, null=True, blank=True)
-    fuel = models.IntegerField(null=True, blank=True, default=100, validators=[MinValueValidator(0)],)
+    fuel = models.FloatField(null=True, blank=True, default=0, validators=[MinValueValidator(0)],)
+    new = models.BooleanField(default=True)
+    coin = models.PositiveIntegerField(default=5000)
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)

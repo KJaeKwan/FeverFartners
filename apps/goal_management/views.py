@@ -1,6 +1,5 @@
 from django.shortcuts import get_object_or_404, render, redirect
 from django.http import JsonResponse, HttpResponseNotFound, HttpResponse, HttpResponseBadRequest
-
 from apps.alarm.models import Alarm
 from .models import *
 from django.contrib.auth.decorators import login_required
@@ -8,6 +7,7 @@ from elasticsearch_dsl import Search, Q
 from apps.group_management.models import Room
 from django.views.decorators.http import require_http_methods
 from .decorators import goal_ownership_required
+import json
 
 def start_creation(request):
     tags = Tag.objects.filter(parent_tag__isnull=True).order_by('tag_name')
@@ -132,6 +132,17 @@ def recommend_group(request, goal_id):
     offline_boost_query = Q('term', favor_offline={'value': goal.favor_offline, 'boost': 2})
     should_queries.append(offline_boost_query)
     
+    if goal.favor_offline:
+        region_boost_query = Q('match', master__region={'query': goal.user.region, 'boost': 2})
+        detail_boost_query = Q('match', master__region_detail={'query': goal.user.region_detail, 'boost': 2})
+        should_queries.append(region_boost_query)
+        should_queries.append(detail_boost_query)
+
+    title_boost_query = Q('match', title={'query': goal.title, 'boost': 2})
+    content_boost_query = Q('match', detail={'query': goal.content, 'boost': 2})
+    should_queries.append(title_boost_query)
+    should_queries.append(content_boost_query)
+
     # is_active가 False일때만 추천 목록에 반영 
     is_active_query = Q('term', is_active=False)
     must_queries.append(is_active_query)
@@ -143,34 +154,35 @@ def recommend_group(request, goal_id):
 
     final_query = Q('bool', must=must_queries, should=should_queries, must_not=must_not_queries)
     s = Search(index='rooms').query(final_query)
+    s = s.sort({'_score': {'order': 'desc'}})
     response = s.execute()
-
-    room_ids = [hit.meta.id for hit in response]
-    # 이미 가입신청을 보냈고, 대기 중인 경우 추천 명단에서 제외한다
-    rooms = Room.objects.filter(pk__in=room_ids).exclude(pk__in=is_pending)
+    hit_scores = {hit.meta.id : hit.meta.score for hit in response if hit.meta.id not in is_pending}
+    rooms = sorted(Room.objects.filter(pk__in=hit_scores.keys()), key=lambda room: hit_scores[str(room.pk)], reverse=True)
     cnt = {
-        'rooms': rooms, 
+        'rooms': rooms,
         'goal': goal
     }
     return render(request, 'goal_management/group_recom.html', cnt)
 
+@goal_ownership_required
+@require_http_methods(["POST"])
 def suggest_join(request, goal_id):
-    if request.method == 'POST':
-        user_id = request.POST.get('user_id')
-        room_id = request.POST.get('room_id')
+    try:
+        data = json.loads(request.body)
+        user_id = data.get('user_id')
+        room_id = data.get('room_id')
         user = get_object_or_404(get_user_model(), id=user_id)
-        goal = get_object_or_404(Goal, id=goal_id)  # 방 정보 가져오기
+        goal = get_object_or_404(Goal, id=goal_id)
         room = get_object_or_404(Room, id=room_id)
-        # 새 알람 객체 생성 시 인스턴스로 변환된 사용자를 할당
         Alarm.objects.create(alarm_from=request.user, alarm_to=user, goal = goal, room = room)
-        return redirect(f'/goal/group_recommendation/{goal.id}')
-    else:
-        return redirect('/')# POST 요청이 아닌 경우 홈페이지로 리다이렉트
+        return HttpResponse(status=204)
+    except Exception:
+        return HttpResponse(status=400)
 
 def show_achievement_report_list(request):
-    reports = AchievementReport.objects.all()
+    reports = AchievementReport.objects.all().order_by('-id')  # id는 보고서가 생성된 순서를 나타내는 것으로 가정합니다.
     cnt = {
-        'reports':reports, 
+        'reports': reports, 
     }
     return render(request, 'goal_management/achievement_report_main.html', cnt)
 
@@ -203,3 +215,35 @@ def create_achievement_report(request, goal_id):
             'goal':goal,
         }
         return render(request, 'goal_management/achievement_reporting_form.html', cnt)
+    
+def update_react_count(request, report_id):
+    json_data = json.loads(request.body)
+    report = AchievementReport.objects.get(pk=report_id)
+    action = json_data.get('action')
+    if action == 'love':
+        love_count = report.reacted_love.count()
+        if request.user in report.reacted_love.all():
+            love_count -= 1
+            report.reacted_love.remove(request.user)
+        else:
+            love_count += 1
+            report.reacted_love.add(request.user)
+        return JsonResponse({'love_count':love_count}, status=200)
+    elif action == 'like':
+        like_count = report.reacted_respectful.count()
+        if request.user in report.reacted_respectful.all():
+            like_count -= 1
+            report.reacted_respectful.remove(request.user)
+        else:
+            like_count += 1
+            report.reacted_respectful.add(request.user)
+        return JsonResponse({'like_count':like_count}, status=200)
+    elif action == 'dislike':
+        dislike_count = report.reacted_dislike.count()
+        if request.user in report.reacted_dislike.all():
+            dislike_count -= 1
+            report.reacted_dislike.remove(request.user)
+        else:
+            dislike_count += 1
+            report.reacted_dislike.add(request.user)
+        return JsonResponse({'dislike_count':dislike_count}, status=200)

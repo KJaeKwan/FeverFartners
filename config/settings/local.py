@@ -21,10 +21,26 @@ DATABASES = {
     }
 }
 
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': 'http://localhost:9200',
+    },
+} 
+
 SOCIALACCOUNT_PROVIDERS = {
     'naver': {'APP': {
                         'client_id': env("NAVER_CLIENT_ID"),
                         'secret': env("NAVER_CLIENT_SECRET"),
+                        'key': ''
+                }},
+    'google': {'APP': {
+                        'client_id': env("GOOGLE_CLIENT_ID"),
+                        'secret': env("GOOGLE_CLIENT_SECRET"),
+                        'key': ''
+                }},
+    'kakao': {'APP': {
+                        'client_id': env("KAKAO_CLIENT_ID"),
+                        'secret': env("KAKAO_CLIENT_SECRET"),
                         'key': ''
                 }},
 }
